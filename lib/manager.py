@@ -1,8 +1,4 @@
-from .models import ModelConfig, ServerConfig
+from .models import PluginConfig
 
-models: list[ModelConfig] = []
-apikeys: list[str] = []
-server: ServerConfig
-default_model: str = ""
 active_time: float = 0
-timeout: int = 30
+config: PluginConfig

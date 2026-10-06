@@ -6,17 +6,26 @@ from pydantic import BaseModel
 from astrbot.api import logger
 
 
-class ServerConfig(BaseModel):
-    port: int
-    host: str
-    name: str
-
-
 class ModelConfig(BaseModel):
     uid: str
     id: str
     name: str
     group: str | None = None
+
+
+class ServerConfig(BaseModel):
+    port: int
+    host: str
+    name: str
+    apikeys: list[str]
+
+
+class PluginConfig(BaseModel):
+    server: ServerConfig
+    models: list[ModelConfig]
+    default_model: str
+    timeout: float
+    notice: bool
 
 
 class MessagePart(TypedDict):

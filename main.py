@@ -13,22 +13,21 @@ from astrbot.core.platform.message_session import MessageSession
 from astrbot.core.star.filter.event_message_type import EventMessageType
 
 from .lib import manager
-from .lib.models import MessagePart, ModelConfig, ResponseState, ServerConfig
+from .lib.models import (
+    MessagePart,
+    ModelConfig,
+    PluginConfig,
+    ResponseState,
+)
 from .lib.server import ProxyServer
 
 
 class PluginQQProxy(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context, config)
-        manager.server = ServerConfig.model_validate(config["server"])
-        manager.default_model = config["default_model"]
         manager.active_time = time.time()
-        manager.timeout = config["timeout"]
-        for model in config["models"]:
-            manager.models.append(ModelConfig.model_validate(model))
-        for key in config["apikeys"]:
-            manager.apikeys.append(key)
-        logger.info(f"Models: {manager.models}")
+        manager.config = PluginConfig.model_validate(config)
+        logger.info(f"Models: {manager.config.models}")
         self.server = ProxyServer(self.model_call)
         self.response: ResponseState | None = None
         self.sessions: dict[str, MessageSession] = {}
@@ -48,6 +47,8 @@ class PluginQQProxy(Star):
     ) -> AsyncGenerator[str]:
         async def notice(session: MessageSession, message: str, at: bool = True):
             try:
+                if not manager.config.notice:
+                    raise EOFError("通知已被跳过")
                 plain = Plain(message)
                 if at:
                     await self.context.send_message(
@@ -65,6 +66,8 @@ class PluginQQProxy(Star):
                     )
             except ActionFailed:
                 logger.error("通知发送失败，可能被禁言了")
+            except Exception as e:
+                logger.warning(str(e))
 
         self.response = ResponseState(True, model, id)
         session = self.get_caller_session(model)
@@ -87,7 +90,7 @@ class PluginQQProxy(Star):
         )
         while self.response.status:
             try:
-                yield await self.response.pop(manager.timeout)
+                yield await self.response.pop(manager.config.timeout)
             except TimeoutError:
                 self.response.stop()
                 break

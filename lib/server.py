@@ -25,18 +25,18 @@ class ProxyServer:
         if not authorization_head.startswith("Bearer "):
             return web.json_response({"error": "Unauthorized"}, status=401)
         apikey = authorization_head.removeprefix("Bearer ").strip()
-        if apikey not in manager.apikeys:
+        if apikey not in manager.config.server.apikeys:
             return web.json_response({"error": "Unauthorized"}, status=401)
         body: dict = await request.json()
 
         stream = body.get("stream", False)
-        model_id = body.get("model", manager.default_model)
+        model_id = body.get("model", manager.config.default_model)
         messages: list[MessagePart] = body.get("messages", [])
         response_id = str(uuid.uuid4())
         create_time = int(time.time())
 
         model_config: ModelConfig | None = None
-        for config in manager.models:
+        for config in manager.config.models:
             if config.id == model_id:
                 model_config = config
         if not model_config:
@@ -109,9 +109,9 @@ class ProxyServer:
                         "id": x.id,
                         "object": "model",
                         "created": manager.active_time,
-                        "owned_by": manager.server.name,
+                        "owned_by": manager.config.server.name,
                     }
-                    for x in manager.models
+                    for x in manager.config.models
                 ],
             }
         )
@@ -127,7 +127,7 @@ class ProxyServer:
         runner = web.AppRunner(app)
         self.runner = runner
         await runner.setup()
-        await web.TCPSite(runner, manager.server.host, manager.server.port).start()
+        await web.TCPSite(runner, manager.config.server.host, manager.config.server.port).start()
         await asyncio.Event().wait()
 
     async def stop(self):
