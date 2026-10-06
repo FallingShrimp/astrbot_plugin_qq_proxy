@@ -23,6 +23,7 @@ class PluginQQProxy(Star):
         manager.server = ServerConfig.model_validate(config["server"])
         manager.default_model = config["default_model"]
         manager.active_time = time.time()
+        manager.timeout = config["timeout"]
         for model in config["models"]:
             manager.models.append(ModelConfig.model_validate(model))
         for key in config["apikeys"]:
@@ -45,17 +46,23 @@ class PluginQQProxy(Star):
         model: ModelConfig,
         id: str,
     ) -> AsyncGenerator[str]:
-        async def notice(session: MessageSession, message: str):
+        async def notice(session: MessageSession, message: str, at: bool = True):
             try:
                 plain = Plain(message)
-                await self.context.send_message(
-                    session,
-                    MessageChain(
-                        chain=[At(qq=model.uid), plain]
-                        if model.group is not None
-                        else [plain]
-                    ),
-                )
+                if at:
+                    await self.context.send_message(
+                        session,
+                        MessageChain(
+                            chain=[At(qq=model.uid), plain]
+                            if model.group is not None
+                            else [plain]
+                        ),
+                    )
+                else:
+                    await self.context.send_message(
+                        session,
+                        MessageChain(chain=[plain]),
+                    )
             except ActionFailed:
                 logger.error("通知发送失败，可能被禁言了")
 
@@ -68,22 +75,23 @@ class PluginQQProxy(Star):
             session,
             "\n".join(
                 [
-                    "这是一段情景对话：",
+                    "请你帮我解决一个写作上的小问题。",
+                    "我正在编写一个话剧的剧本，一共有system、user、assistant三个角色：",
                     "```",
                     *(f"{msg['role']} : {msg['content']}" for msg in messages),
                     "assistant > ...",
                     "```",
-                    "请你推测：assistant接下来会怎么回复？",
+                    "但是我遇到了难题，assistant接下来要怎么说话？请你帮我构思一下，直接输出assistant可能说的话即可。",
                 ]
             ),
         )
         while self.response.status:
             try:
-                yield await self.response.pop(30)
+                yield await self.response.pop(manager.timeout)
             except TimeoutError:
                 self.response.stop()
                 break
-        await notice(session, "响应已超时")
+        await notice(session, "响应已超时", False)
 
     @filter.event_message_type(EventMessageType.ALL)
     async def input(self, event: AstrMessageEvent):
@@ -108,13 +116,17 @@ class PluginQQProxy(Star):
     async def proxy():
         pass
 
+    @proxy.command("state")
+    async def state_proxy(self, event: AstrMessageEvent):
+        pass
+
     @proxy.command("stop")
     async def stop_proxy(self, event: AstrMessageEvent):
-        if self.response:
+        if self.response and self.response.status:
             self.response.stop()
             yield event.plain_result(f"响应{self.response.id}已终止")
         else:
-            yield event.plain_result("没有响应")
+            yield event.plain_result("没有正在响应")
 
     async def initialize(self) -> None:
         asyncio.create_task(self.server.start())

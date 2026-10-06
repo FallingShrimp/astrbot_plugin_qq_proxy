@@ -1,86 +1,91 @@
 {
-	"models": {
-		"type": "template_list",
-		"description": "模型列表",
-		"templates": {
-			"group": {
-				"name": "群聊会话",
-				"hint": "群友在群聊里回复响应",
-				"items": {
-					"uid": {
-						"description": "指定用户的UID",
-						"type": "string",
-						"default": "114514"
-					},
-					"name": {
-						"description": "模型名称",
-						"type": "text",
-						"default": "Holy Shit!"
-					},
-					"id": {
-						"description": "模型ID",
-						"type": "string",
-						"default": "holy-shit"
-					},
-					"group": {
-						"description": "在哪个群聊进行调用",
-						"type": "string",
-						"default": "1919810"
-					}
-				}
-			},
-			"private": {
-				"name": "私聊会话",
-				"hint": "对方在私聊里回复响应",
-				"items": {
-					"uid": {
-						"description": "指定用户的UID",
-						"type": "string",
-						"default": "114514"
-					},
-					"name": {
-						"description": "模型名称",
-						"type": "text",
-						"default": "Holy Shit!"
-					},
-					"id": {
-						"description": "模型ID",
-						"type": "string",
-						"default": "holy-shit"
-					}
-				}
-			}
-		}
-	},
-	"apikeys": {
-		"type": "list",
-		"description": "Api Keys",
-		"secret": true,
-		"obvious_hint": "不要泄露Api Key，除非是你分发给别人的。"
-	},
-	"server": {
-		"type": "object",
-		"description": "服务器配置",
-		"items": {
-			"port": {
-				"type": "int",
-				"description": "端口号",
-				"default": 25565
-			},
-			"host": {
-				"type": "string",
-				"description": "主机",
-				"default": "0.0.0.0"
-			},
-			"name": {
-				"type": "text",
-				"description": "服务器名称，用于/v1/models",
-				"default": "超级群友-API"
-			}
-		}
-	},
-	"default_model": {
-		"type": "string",
-		"description": "当请求未指定models时用哪个模型"
-	}
+    "models": {
+        "type": "template_list",
+        "description": "模型列表",
+        "templates": {
+            "group": {
+                "name": "群聊会话",
+                "hint": "群友在群聊里回复响应",
+                "items": {
+                    "uid": {
+                        "description": "指定用户的UID",
+                        "type": "string",
+                        "default": "114514"
+                    },
+                    "name": {
+                        "description": "模型名称",
+                        "type": "text",
+                        "default": "Holy Shit!"
+                    },
+                    "id": {
+                        "description": "模型ID",
+                        "type": "string",
+                        "default": "holy-shit"
+                    },
+                    "group": {
+                        "description": "在哪个群聊进行调用",
+                        "type": "string",
+                        "default": "1919810"
+                    }
+                }
+            },
+            "private": {
+                "name": "私聊会话",
+                "hint": "对方在私聊里回复响应",
+                "items": {
+                    "uid": {
+                        "description": "指定用户的UID",
+                        "type": "string",
+                        "default": "114514"
+                    },
+                    "name": {
+                        "description": "模型名称",
+                        "type": "text",
+                        "default": "Holy Shit!"
+                    },
+                    "id": {
+                        "description": "模型ID",
+                        "type": "string",
+                        "default": "holy-shit"
+                    }
+                }
+            }
+        }
+    },
+    "apikeys": {
+        "type": "list",
+        "description": "Api Keys",
+        "secret": true,
+        "obvious_hint": "不要泄露Api Key，除非是你分发给别人的。"
+    },
+    "server": {
+        "type": "object",
+        "description": "服务器配置",
+        "items": {
+            "port": {
+                "type": "int",
+                "description": "端口号",
+                "default": 25565
+            },
+            "host": {
+                "type": "string",
+                "description": "主机",
+                "default": "0.0.0.0"
+            },
+            "name": {
+                "type": "text",
+                "description": "服务器名称，用于/v1/models",
+                "default": "超级群友-API"
+            }
+        }
+    },
+    "default_model": {
+        "type": "string",
+        "description": "当请求未指定models时用哪个模型"
+    },
+    "timeout": {
+        "type": "int",
+        "description": "流式响应的节流冷却时间，单位为秒",
+        "default": 30
+    }
 }
