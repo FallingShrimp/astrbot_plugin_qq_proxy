@@ -1,10 +1,11 @@
+import asyncio
 import time
 from collections.abc import AsyncGenerator
 
 from astrbot.api.star import Context, Star
 
 from .lib import manager
-from .lib.models import ModelConfig, ServerConfig
+from .lib.models import MessagePart, ModelConfig, ServerConfig
 from .lib.server import ProxyServer
 
 
@@ -21,6 +22,16 @@ class PluginQQProxy(Star):
         self.logger.info(f"Models: {manager.models}")
         self.server = ProxyServer(self.model_call)
 
-    async def model_call(self, model: ModelConfig) -> AsyncGenerator[str]:
+    async def model_call(
+        self,
+        messages: list[MessagePart],
+        model: ModelConfig,
+    ) -> AsyncGenerator[str]:
         for token in "你是一个一个一个一个sb":
             yield token
+
+    async def initialize(self) -> None:
+        asyncio.create_task(self.server.start())
+
+    async def terminate(self) -> None:
+        await self.server.stop()

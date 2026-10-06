@@ -1,3 +1,5 @@
+from typing import Literal, TypedDict
+
 from pydantic import BaseModel
 
 
@@ -12,3 +14,8 @@ class ModelConfig(BaseModel):
     id: str
     name: str
     session: str
+
+
+class MessagePart(TypedDict):
+    role: Literal["user"] | Literal["assistant"] | Literal["system"]
+    content: str

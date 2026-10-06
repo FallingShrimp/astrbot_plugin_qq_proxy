@@ -7,12 +7,13 @@ from collections.abc import AsyncGenerator, Callable
 from aiohttp import web
 
 from ..lib import manager
-from .models import ModelConfig
+from .models import MessagePart, ModelConfig
 
 
 class ProxyServer:
     def __init__(
-        self, model_call: Callable[[ModelConfig], AsyncGenerator[str]]
+        self,
+        model_call: Callable[[list[MessagePart], ModelConfig], AsyncGenerator[str]],
     ) -> None:
         self.runner: web.AppRunner | None = None
         self.model_call = model_call
@@ -25,19 +26,29 @@ class ProxyServer:
         if apikey not in manager.apikeys:
             return web.json_response({"error": "Unauthorized"}, status=401)
         body: dict = await request.json()
+
         stream = body.get("stream", False)
-        model = body.get("model", manager.default_model)
-        messages = body.get("messages", [])
-        response_id = uuid.uuid4()
+        model_id = body.get("model", manager.default_model)
+        messages: list[MessagePart] = body.get("messages", [])
+        response_id = str(uuid.uuid4())
         create_time = int(time.time())
+
+        model_config: ModelConfig | None = None
+        for config in manager.models:
+            if config.id == model_id:
+                model_config = config
+        if not model_config:
+            return web.json_response(
+                {"error": f"Not found model {model_id}"}, status=404
+            )
         if not stream:
-            result = "".join([t async for t in self.model_call(messages)])
+            result = "".join([t async for t in self.model_call(messages, model_config)])
             return web.json_response(
                 {
                     "id": response_id,
                     "object": "chat.completion",
                     "created": create_time,
-                    "model": model,
+                    "model": model_id,
                     "choices": [
                         {
                             "index": 0,
@@ -58,12 +69,12 @@ class ProxyServer:
             response.headers["Cache-Control"] = "no-cache"
             response.headers["Connection"] = "keep-alive"
             await response.prepare(request)
-            async for token in self.model_call(messages):
+            async for token in self.model_call(messages, model_config):
                 chunk = {
                     "id": response_id,
                     "object": "chat.completion.chunk",
                     "created": create_time,
-                    "model": model,
+                    "model": model_id,
                     "choices": [
                         {"index": 0, "delta": {"content": token}, "finish_reason": None}
                     ],
@@ -74,7 +85,7 @@ class ProxyServer:
                 "id": response_id,
                 "object": "chat.completion.chunk",
                 "created": create_time,
-                "model": model,
+                "model": model_id,
                 "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
             }
             await response.write(
@@ -111,5 +122,10 @@ class ProxyServer:
         runner = web.AppRunner(app)
         self.runner = runner
         await runner.setup()
-        await web.TCPSite(runner, "0.0.0.0", 8000).start()
+        await web.TCPSite(runner, manager.server.host, manager.server.port).start()
         await asyncio.Event().wait()
+
+    async def stop(self):
+        if not self.runner:
+            return
+        await self.runner.cleanup()
