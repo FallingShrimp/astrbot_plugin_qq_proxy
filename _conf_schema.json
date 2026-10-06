@@ -11,12 +11,16 @@
 						"description": "指定用户的UID",
 						"type": "string"
 					},
-					"model_name": {
+					"name": {
 						"description": "模型名称",
 						"type": "text"
 					},
-					"model_id": {
+					"id": {
 						"description": "模型ID",
+						"type": "string"
+					},
+					"session": {
+						"description": "在哪个会话进行调用",
 						"type": "string"
 					}
 				}

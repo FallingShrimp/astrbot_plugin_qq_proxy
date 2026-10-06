@@ -1,6 +1,6 @@
 name: astrbot_plugin_qq_proxy
-display_name: 群友的Bot代理为OpenAI Compatible
-desc: 将你的Bot群友反代出来。
+display_name: 代理你的Bot群友
+desc: 将你的Bot群友反代为OpenAI Compatible协议。
 version: v1.0.0
 author: 陨落基围虾
 repo: https://github.com/FallingShrimp/astrbot_plugin_qq_proxy.git
