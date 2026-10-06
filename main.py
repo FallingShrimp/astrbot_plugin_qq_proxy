@@ -2,6 +2,9 @@ import asyncio
 import time
 from collections.abc import AsyncGenerator
 
+from aiocqhttp.exceptions import ActionFailed
+
+from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star
 from astrbot.core.message.components import At, Plain
@@ -24,7 +27,7 @@ class PluginQQProxy(Star):
             manager.models.append(ModelConfig.model_validate(model))
         for key in config["apikeys"]:
             manager.apikeys.append(key)
-        self.logger.info(f"Models: {manager.models}")
+        logger.info(f"Models: {manager.models}")
         self.server = ProxyServer(self.model_call)
         self.response: ResponseState | None = None
         self.sessions: dict[str, MessageSession] = {}
@@ -33,8 +36,8 @@ class PluginQQProxy(Star):
         return f"{uid}${group}"
 
     def get_caller_session(self, model: ModelConfig) -> MessageSession | None:
-        self.logger.info(self.sessions)
-        return self.sessions[self.get_session_key(model.uid, model.group)]
+        logger.info(self.sessions)
+        return self.sessions.get(self.get_session_key(model.uid, model.group))
 
     async def model_call(
         self,
@@ -43,28 +46,33 @@ class PluginQQProxy(Star):
         id: str,
     ) -> AsyncGenerator[str]:
         async def notice(session: MessageSession, message: str):
-            plain = Plain(message)
-            await self.context.send_message(
-                session,
-                MessageChain(
-                    chain=[At(qq=model.uid), plain]
-                    if model.group is not None
-                    else [plain]
-                ),
-            )
+            try:
+                plain = Plain(message)
+                await self.context.send_message(
+                    session,
+                    MessageChain(
+                        chain=[At(qq=model.uid), plain]
+                        if model.group is not None
+                        else [plain]
+                    ),
+                )
+            except ActionFailed:
+                logger.error("通知发送失败，可能被禁言了")
 
         self.response = ResponseState(True, model, id)
         session = self.get_caller_session(model)
         if not session:
-            yield '<failed reason="Session not obtianed." />'
+            yield '<failed reason="会话尚未被捕获" />'
             return
         await notice(
             session,
             "\n".join(
                 [
                     "这是一段情景对话：",
-                    *(f"{msg['role']} > {msg['content']}" for msg in messages),
+                    "```",
+                    *(f"{msg['role']} : {msg['content']}" for msg in messages),
                     "assistant > ...",
+                    "```",
                     "请你推测：assistant接下来会怎么回复？",
                 ]
             ),
@@ -75,12 +83,14 @@ class PluginQQProxy(Star):
             except TimeoutError:
                 self.response.stop()
                 break
+        await notice(session, "响应已超时")
 
     @filter.event_message_type(EventMessageType.ALL)
     async def input(self, event: AstrMessageEvent):
         key = self.get_session_key(event.get_sender_id(), event.get_group_id())
-        self.sessions[key] = event.session
-        self.logger.info(f"对于{key}的会话{event.get_session_id()}已被捕获")
+        if key not in self.sessions:
+            self.sessions[key] = event.session
+            logger.info(f"对于{key}的会话{event.get_session_id()}已被捕获")
         if not self.response:
             return
         if not self.response.status:
@@ -90,6 +100,8 @@ class PluginQQProxy(Star):
         if self.response.source.group is not None:
             if event.get_group_id() != self.response.source.group:
                 return
+        event.call_llm = True
+        event.stop_event()
         self.response.upload(event.message_str)
 
     @filter.command_group("proxy")

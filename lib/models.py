@@ -1,8 +1,9 @@
 import asyncio
-import random
 from typing import Literal, TypedDict
 
 from pydantic import BaseModel
+
+from astrbot.api import logger
 
 
 class ServerConfig(BaseModel):
@@ -28,34 +29,15 @@ class ResponseState:
         self.status: bool = status
         self.source: ModelConfig = source
         self.id: str = id
-        self.out_count = random.randint(2, 6)
-        self.in_count = random.randint(3, 5)
-        self.outed = 0
-        self.ined = 0
         self.queue = asyncio.Queue[str]()
-
-    def is_started(self) -> bool:
-        return (
-            self.status and self.outed >= self.out_count and self.ined < self.in_count
-        )
 
     def stop(self):
         self.status = False
-        self.queue.put_nowait("")
+        self.upload("")
 
     def upload(self, data: str):
-        if self.status:
-            if data == f"{self.id} out":
-                self.outed += 1
-            elif data == f"{self.id} in":
-                self.ined += 1
-            elif self.is_started():
-                self.queue.put_nowait(data)
-            else:
-                self.outed = 0
-                self.ined = 0
-        else:
-            self.queue.put_nowait(data)
+        self.queue.put_nowait(data)
+        logger.info(f"正在上传“{data}”")
 
     async def pop(self, timeout: float):
         return await asyncio.wait_for(self.queue.get(), timeout)
