@@ -50,7 +50,16 @@
 				"type": "string",
 				"description": "主机",
 				"default": "0.0.0.0"
+			},
+			"name": {
+				"type": "text",
+				"description": "服务器名称，用于/v1/models",
+				"default": "超级群友-API"
 			}
 		}
+	},
+	"default_model": {
+		"type": "string",
+		"description": "当请求未指定models时用哪个模型"
 	}
 }

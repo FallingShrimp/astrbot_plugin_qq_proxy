@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class ServerConfig(BaseModel):
     port: int
     host: str
+    name: str
 
 
 class ModelConfig(BaseModel):
