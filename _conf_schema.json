@@ -9,21 +9,47 @@
 				"items": {
 					"uid": {
 						"description": "指定用户的UID",
-						"type": "string"
+						"type": "string",
+						"default": "114514"
 					},
 					"name": {
 						"description": "模型名称",
-						"type": "text"
+						"type": "text",
+						"default": "Holy Shit!"
 					},
 					"id": {
 						"description": "模型ID",
-						"type": "string"
+						"type": "string",
+						"default": "holy-shit"
 					},
 					"session": {
 						"description": "在哪个会话进行调用",
-						"type": "string"
+						"type": "string",
+						"default": "1919810"
 					}
 				}
+			}
+		}
+	},
+	"apikeys": {
+		"type": "list",
+		"description": "Api Keys",
+		"secret": true,
+		"obvious_hint": "不要泄露Api Key，除非是你分发给别人的。"
+	},
+	"server": {
+		"type": "object",
+		"description": "服务器配置",
+		"items": {
+			"port": {
+				"type": "int",
+				"description": "端口号",
+				"default": 25565
+			},
+			"host": {
+				"type": "string",
+				"description": "主机",
+				"default": "0.0.0.0"
 			}
 		}
 	}
