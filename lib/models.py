@@ -20,12 +20,18 @@ class ServerConfig(BaseModel):
     apikeys: list[str]
 
 
+class PromptStore(BaseModel):
+    assistant: str
+    pair: str
+
+
 class PluginConfig(BaseModel):
     server: ServerConfig
     models: list[ModelConfig]
     default_model: str
     timeout: float
     notice: bool
+    prompts: PromptStore
 
 
 class MessagePart(TypedDict):

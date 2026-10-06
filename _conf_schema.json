@@ -92,5 +92,22 @@
         "type": "bool",
         "description": "是否提示目标账户进行响应",
         "default": true
+    },
+    "prompts": {
+        "type": "object",
+        "description": "提示词模板",
+        "hint": "可以通过{}指代占位符",
+        "items": {
+            "assistant": {
+                "type": "text",
+                "description": "请求群友时采用的提示词",
+                "default": "请你帮我解决一个写作上的小问题。\n我正在编写一个话剧的剧本，一共有system、user、assistant三个角色：\n```\n{messages}\n\nassistant ...？\n```\n但是我遇到了一个难题，assistant接下来要怎么说话？请你帮我构思一下，直接输出assistant可能说的话即可。"
+            },
+            "pair": {
+                "type": "text",
+                "description": "将上下文的分块格式化",
+                "default": "{role} : {content}"
+            }
+        }
     }
 }

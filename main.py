@@ -36,7 +36,6 @@ class PluginQQProxy(Star):
         return f"{uid}${group}"
 
     def get_caller_session(self, model: ModelConfig) -> MessageSession | None:
-        logger.info(self.sessions)
         return self.sessions.get(self.get_session_key(model.uid, model.group))
 
     async def model_call(
@@ -74,18 +73,27 @@ class PluginQQProxy(Star):
         if not session:
             yield '<failed reason="会话尚未被捕获" />'
             return
+        # await notice(
+        #     session,
+        #     "\n".join(
+        #         [
+        #             "请你帮我解决一个写作上的小问题。",
+        #             "我正在编写一个话剧的剧本，一共有system、user、assistant三个角色：",
+        #             "```",
+        #             *(f"{msg['role']} : {msg['content']}" for msg in messages),
+        #             "assistant > ...",
+        #             "```",
+        #             "但是我遇到了难题，assistant接下来要怎么说话？请你帮我构思一下，直接输出assistant可能说的话即可。",
+        #         ]
+        #     ),
+        # )
+        logger.info(str([manager.config.prompts.pair, messages]))
         await notice(
             session,
-            "\n".join(
-                [
-                    "请你帮我解决一个写作上的小问题。",
-                    "我正在编写一个话剧的剧本，一共有system、user、assistant三个角色：",
-                    "```",
-                    *(f"{msg['role']} : {msg['content']}" for msg in messages),
-                    "assistant > ...",
-                    "```",
-                    "但是我遇到了难题，assistant接下来要怎么说话？请你帮我构思一下，直接输出assistant可能说的话即可。",
-                ]
+            manager.config.prompts.assistant.format(
+                messages="\n".join(
+                    manager.config.prompts.pair.format(**msg) for msg in messages
+                )
             ),
         )
         while self.response.status:
@@ -94,7 +102,7 @@ class PluginQQProxy(Star):
             except TimeoutError:
                 self.response.stop()
                 break
-        await notice(session, "响应已超时", False)
+        await notice(session, "响应已停止", False)
 
     @filter.event_message_type(EventMessageType.ALL)
     async def input(self, event: AstrMessageEvent):

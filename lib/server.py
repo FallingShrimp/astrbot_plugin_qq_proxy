@@ -127,7 +127,9 @@ class ProxyServer:
         runner = web.AppRunner(app)
         self.runner = runner
         await runner.setup()
-        await web.TCPSite(runner, manager.config.server.host, manager.config.server.port).start()
+        await web.TCPSite(
+            runner, manager.config.server.host, manager.config.server.port
+        ).start()
         await asyncio.Event().wait()
 
     async def stop(self):
