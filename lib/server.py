@@ -13,7 +13,9 @@ from .models import MessagePart, ModelConfig
 class ProxyServer:
     def __init__(
         self,
-        model_call: Callable[[list[MessagePart], ModelConfig], AsyncGenerator[str]],
+        model_call: Callable[
+            [list[MessagePart], ModelConfig, str], AsyncGenerator[str]
+        ],
     ) -> None:
         self.runner: web.AppRunner | None = None
         self.model_call = model_call
@@ -41,8 +43,11 @@ class ProxyServer:
             return web.json_response(
                 {"error": f"Not found model {model_id}"}, status=404
             )
+
         if not stream:
-            result = "".join([t async for t in self.model_call(messages, model_config)])
+            result = "".join(
+                [t async for t in self.model_call(messages, model_config, response_id)]
+            )
             return web.json_response(
                 {
                     "id": response_id,
@@ -69,7 +74,7 @@ class ProxyServer:
             response.headers["Cache-Control"] = "no-cache"
             response.headers["Connection"] = "keep-alive"
             await response.prepare(request)
-            async for token in self.model_call(messages, model_config):
+            async for token in self.model_call(messages, model_config, response_id):
                 chunk = {
                     "id": response_id,
                     "object": "chat.completion.chunk",
